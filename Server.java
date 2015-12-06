@@ -7,14 +7,15 @@ import org.json.simple.JSONValue;
 public class Server {
 
 
-	private int char1X;
-	private int char1Y;
-	private int char2X;
-	private int char2Y;
+	
 
 
     public static void main(String[] args) throws IOException {
-        
+        float char0X;
+	    float char0Y;
+	    float char1X;
+	    float char1Y;
+	    
         if (args.length != 1) {
             System.err.println("Usage: java EchoServer <port number>");
             System.exit(1);
@@ -45,11 +46,15 @@ public class Server {
             		inputLine0 = client0in.readLine();
             		received0 = (JSONObject) JSONValue.parse(inputLine0);
             		System.out.println("received from client 0: " + received0.toString());
+            		char0X = ((Number) received0.get("charX")).floatValue();
+            		char0Y = ((Number) received0.get("charY")).floatValue();
             	}
             	if (client1in.ready()) {
             		inputLine1 = client1in.readLine();
             		received1 = (JSONObject) JSONValue.parse(inputLine1);
             		System.out.println("received from client 1: " + received1.toString());
+            		char1X = ((Number) received1.get("charX")).floatValue();
+            		char1Y = ((Number) received1.get("charY")).floatValue();
             	}
             }
             //System.out.println("*****************ONE OR MORE CLIENTS DISCONNECTED******************");

@@ -48,6 +48,13 @@ public class Server {
             		System.out.println("received from client 0: " + received0.toString());
             		char0X = ((Number) received0.get("charX")).floatValue();
             		char0Y = ((Number) received0.get("charY")).floatValue();
+            		
+            		// send coordinates to other client
+            		String jsonString;
+	            	JSONObject obj = new JSONObject();
+	                obj.put("charX", char0X);
+	                obj.put("charY", char0Y);
+	                client1out.println(obj.toString());
             	}
             	if (client1in.ready()) {
             		inputLine1 = client1in.readLine();
@@ -55,6 +62,13 @@ public class Server {
             		System.out.println("received from client 1: " + received1.toString());
             		char1X = ((Number) received1.get("charX")).floatValue();
             		char1Y = ((Number) received1.get("charY")).floatValue();
+
+            		// send coordinates to other client
+            		String jsonString;
+	            	JSONObject obj = new JSONObject();
+	                obj.put("charX", char1X);
+	                obj.put("charY", char1Y);
+	                client0out.println(obj.toString());
             	}
             }
             //System.out.println("*****************ONE OR MORE CLIENTS DISCONNECTED******************");

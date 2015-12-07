@@ -5,11 +5,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
 public class Server {
-
-
-	
-
-
     public static void main(String[] args) throws IOException {
         float char0X;
 	    float char0Y;
@@ -37,6 +32,11 @@ public class Server {
             BufferedReader client1in = new BufferedReader(new InputStreamReader(client1Socket.getInputStream()));
             System.out.println("*****************CLIENT 1 CONNECTED******************");
 
+            JSONObject readyObject = new JSONObject();
+            readyObject.put("type", "gameStartSignal");
+            client0out.println(readyObject);
+            client1out.println(readyObject);
+
             String inputLine0;
             String inputLine1;
             JSONObject received0;
@@ -46,29 +46,28 @@ public class Server {
             		inputLine0 = client0in.readLine();
             		received0 = (JSONObject) JSONValue.parse(inputLine0);
             		System.out.println("received from client 0: " + received0.toString());
-            		char0X = ((Number) received0.get("charX")).floatValue();
-            		char0Y = ((Number) received0.get("charY")).floatValue();
+            		if (received0.get("type").equals("position")) {
+            			//record position
+            			char0X = ((Number) received0.get("charX")).floatValue();
+            			char0Y = ((Number) received0.get("charY")).floatValue();
             		
-            		// send coordinates to other client
-            		String jsonString;
-	            	JSONObject obj = new JSONObject();
-	                obj.put("charX", char0X);
-	                obj.put("charY", char0Y);
-	                client1out.println(obj.toString());
+	            		// send coordinates to other client
+		                client1out.println(received0);
+            		}
+            		
             	}
             	if (client1in.ready()) {
             		inputLine1 = client1in.readLine();
             		received1 = (JSONObject) JSONValue.parse(inputLine1);
             		System.out.println("received from client 1: " + received1.toString());
-            		char1X = ((Number) received1.get("charX")).floatValue();
-            		char1Y = ((Number) received1.get("charY")).floatValue();
+            		if (received1.get("type").equals("position")) {
+            			//record position
+	            		char1X = ((Number) received1.get("charX")).floatValue();
+	            		char1Y = ((Number) received1.get("charY")).floatValue();
 
-            		// send coordinates to other client
-            		String jsonString;
-	            	JSONObject obj = new JSONObject();
-	                obj.put("charX", char1X);
-	                obj.put("charY", char1Y);
-	                client0out.println(obj.toString());
+	            		// send coordinates to other client
+		                client0out.println(received1);
+		            }
             	}
             }
             //System.out.println("*****************ONE OR MORE CLIENTS DISCONNECTED******************");

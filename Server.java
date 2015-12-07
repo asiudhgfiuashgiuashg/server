@@ -63,6 +63,7 @@ public class Server {
     	inputLine = receiveFromClient.clientIn.readLine();
 		received = (JSONObject) JSONValue.parse(inputLine);
 		System.out.println("received from client " + received.toString());
+		//position messages
 		if (received.get("type").equals("position")) {
 			//record position
 			receiveFromClient.charX = ((Number) received.get("charX")).floatValue();
@@ -72,6 +73,31 @@ public class Server {
     		for (PlayerClient client: clientList) {
     			if (client != receiveFromClient) {
             		client.clientOut.println(received);
+            	}
+    		}
+		} else if (received.get("type").equals(("direction"))) { //direction updates, need to update animations accordingly
+			boolean isMovingLeft = (boolean) received.get("isMovingLeft");
+			boolean isMovingRight = (boolean) received.get("isMovingRight");
+			boolean isMovingUp = (boolean) received.get("isMovingUp");
+			boolean isMovingDown = (boolean) received.get("isMovingDown");
+
+			JSONObject animationObj = new JSONObject(); //represents a message signalling an animation change in the RemotePlayer
+			animationObj.put("type", "animation");
+			if (isMovingLeft) {
+				animationObj.put("animationName", "walkLeft"); // these Animation names are recognized by the setAnimation method of RemotePlayer and signal it what animation to change the remotePlayer to
+			} else if (isMovingRight) {
+				animationObj.put("animationName", "walkRight");
+			} else if (isMovingDown) {
+				animationObj.put("animationName", "walkDown");
+			} else if (isMovingUp) {
+				animationObj.put("animationName", "walkUp");
+			} else { //standing still
+				animationObj.put("animationName", "notMoving");
+			}
+
+			for (PlayerClient client: clientList) {
+    			if (client != receiveFromClient) {
+            		client.clientOut.println(animationObj);
             	}
     		}
 		}

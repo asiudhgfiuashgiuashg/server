@@ -92,7 +92,7 @@ public class Server {
 			} else if (isMovingUp) {
 				animationObj.put("animationName", "walkUp");
 			} else { //standing still
-				animationObj.put("animationName", "notMoving");
+				animationObj.put("animationName", "idle");
 			}
 
 			for (PlayerClient client: clientList) {

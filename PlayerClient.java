@@ -1,17 +1,19 @@
 import java.net.*;
 import java.io.*;
+import java.nio.channels.SocketChannel;
+import java.util.Queue;
+import java.util.LinkedList;
+import org.json.simple.JSONObject;
 
 public class PlayerClient {
-	Socket clientSocket;
-    PrintWriter clientOut;               
-    BufferedReader clientIn;
     float charX;
     float charY;
     String username;
+    SocketChannel socketChannel;
+    Queue<JSONObject> messageInQueue;
 
-    public PlayerClient(Socket clientSocket, PrintWriter clientOut, BufferedReader clientIn) {
-    	this.clientSocket = clientSocket;
-    	this.clientOut = clientOut;
-    	this.clientIn = clientIn;
+    public PlayerClient(SocketChannel socketChannel) {
+    	this.socketChannel = socketChannel;
+        messageInQueue =  new LinkedList<>();
     }
 }

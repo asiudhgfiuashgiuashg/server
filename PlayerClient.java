@@ -7,6 +7,7 @@ public class PlayerClient {
     BufferedReader clientIn;
     float charX;
     float charY;
+    String username;
 
     public PlayerClient(Socket clientSocket, PrintWriter clientOut, BufferedReader clientIn) {
     	this.clientSocket = clientSocket;

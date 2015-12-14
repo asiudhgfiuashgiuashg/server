@@ -5,13 +5,18 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import java.util.List;
 import java.util.ArrayList;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.net.InetSocketAddress;
 
 public class Server {
 	private static final int MAX_CLIENTS = 2;
-
+	private static List<PlayerClient> clients;
     public static void main(String[] args) throws IOException {
 
-	    List<PlayerClient> clients = new ArrayList<>();
+	    clients = new ArrayList<>();
+	    ServerSocketChannel serverSocketChannel;
+	    int numClientsConnected = 0;
 	    
         if (args.length != 1) {
             System.err.println("Usage: java EchoServer <port number>");
@@ -21,28 +26,42 @@ public class Server {
         int portNumber = Integer.parseInt(args[0]);
         
         try {
-            ServerSocket serverSocket = new ServerSocket(Integer.parseInt(args[0]));
+            //ServerSocket serverSocket = new ServerSocket(Integer.parseInt(args[0]));
 
-            for (int i = 0; i < MAX_CLIENTS; i++) {
-            	Socket clientSocket = serverSocket.accept();
-            	PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);                   
-            	BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            	clients.add(new PlayerClient(clientSocket, clientOut, clientIn));
-            }
+            serverSocketChannel =  ServerSocketChannel.open();
+            serverSocketChannel.socket().bind(new InetSocketAddress(Integer.parseInt(args[0]))); //give it da port
+            serverSocketChannel.configureBlocking(false);
 
-            //send game start signal to everyone once everyoen is connected
-            JSONObject readyObject = new JSONObject();
-            readyObject.put("type", "gameStartSignal");
-            for (PlayerClient client: clients) {
-            	client.clientOut.println(readyObject);
-            }
-            
+
             //main server loop
             while (true) {
+            	SocketChannel socketChannel = null;
+            	if (numClientsConnected < MAX_CLIENTS) {
+            		socketChannel =  serverSocketChannel.accept(); //see if a connection is immediatly available, will return null if one isnt (non-blocking I/O)
+            	}
+            	if (socketChannel != null) { //got a connection
+            		Socket clientSocket = socketChannel.socket();
+            		PrintWriter clientOut = new PrintWriter(clientSocket.getOutputStream(), true);                   
+            		BufferedReader clientIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            		clients.add(new PlayerClient(clientSocket, clientOut, clientIn));
+
+            		System.out.println("client number " + String.valueOf(numClientsConnected) + " connected");
+            		numClientsConnected++;
+            		
+            		if (MAX_CLIENTS == numClientsConnected) { // send game start signal to everyone
+            			JSONObject readyObject = new JSONObject();
+            			readyObject.put("type", "gameStartSignal");
+            			for (PlayerClient client: clients) {
+				        	client.clientOut.println(readyObject);
+				    	}
+
+            		}
+            	}
             	for (int i = 0; i < clients.size(); i++)  {
             		PlayerClient client = clients.get(i);
             		if (client.clientIn.ready()) {
-            			receiveFromSendTo(clients, i, client.clientIn, client.clientOut);
+            			System.out.println(i);
+            			receiveFrom(i);
             		}
             	}
             }
@@ -51,16 +70,21 @@ public class Server {
             System.out.println("Exception caught when trying to listen on port "
                 + portNumber + " or listening for a connection");
             System.out.println(e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    //receive messages from 1 client and pass them on to all the other clients after saving some information into server vars
-    public static void receiveFromSendTo(List<PlayerClient> clientList, int receiveFromListPosition, BufferedReader receiveFromReader, PrintWriter sendToWriter) throws IOException {
-    	PlayerClient receiveFromClient = clientList.get(receiveFromListPosition);
-    	String inputLine;
+    public static void receiveFrom(int receiveFromListPosition) {
+    	PlayerClient receiveFromClient = clients.get(receiveFromListPosition);
+    	String inputLine = "";
         JSONObject received;
 
-    	inputLine = receiveFromClient.clientIn.readLine();
+        try {
+    		inputLine = receiveFromClient.clientIn.readLine();
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		System.exit(-1);
+    	}
 		received = (JSONObject) JSONValue.parse(inputLine);
 		System.out.println("received from client " + received.toString());
 		//position messages
@@ -69,12 +93,10 @@ public class Server {
 			receiveFromClient.charX = ((Number) received.get("charX")).floatValue();
 			receiveFromClient.charY = ((Number) received.get("charY")).floatValue();
 		
+			System.out.println(received);
     		// send coordinates to other clients
-    		for (PlayerClient client: clientList) {
-    			if (client != receiveFromClient) {
-            		client.clientOut.println(received);
-            	}
-    		}
+    		sendToAllFrom(received, receiveFromClient);
+
 		} else if (received.get("type").equals(("direction"))) { //direction updates, need to update animations accordingly
 			boolean isMovingLeft = (boolean) received.get("isMovingLeft");
 			boolean isMovingRight = (boolean) received.get("isMovingRight");
@@ -94,12 +116,14 @@ public class Server {
 			} else { //standing still
 				animationObj.put("animationName", "idle");
 			}
-
-			for (PlayerClient client: clientList) {
-    			if (client != receiveFromClient) {
-            		client.clientOut.println(animationObj);
-            	}
-    		}
 		}
+    }
+
+    public static void sendToAllFrom(JSONObject toSend, PlayerClient from) {
+    	for (PlayerClient client: clients) {
+			if (client != from) {
+        		client.clientOut.println(toSend);
+        	}
+    	}
     }
 }

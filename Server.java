@@ -64,16 +64,6 @@ public class Server {
 								playerInfo.clear();
 							}
 						}
-
-		        		if (MAX_CLIENTS == numClientsConnected) { // send game start signal to everyone
-		        			JSONObject readyObject = new JSONObject();
-		        			readyObject.put("type", "gameStartSignal");
-		        			for (PlayerClient client: clients) {
-		        				System.out.println("sending");
-					        	sendJSONOnSocketChannel(readyObject, client.socketChannel);
-					    	}
-
-		        		}
 		        	}
             	}
             	
@@ -121,7 +111,7 @@ public class Server {
 				String receivedStr = new String(byteBuffer.array(), 0, numBytesRead, "ASCII");
 				String lines[] = receivedStr.split("\\r?\\n");
 				for (String line: lines) {
-					System.out.println("receivedStr: " + receivedStr);
+					System.out.println("--------------------------------------");
 					receiveTo = (JSONObject) JSONValue.parse(receivedStr);
 					System.out.println("received json value: " + receiveTo);
 					client.messageInQueue.add(receiveTo);
@@ -168,6 +158,7 @@ public class Server {
 					animationObj.put("animationName", "idle");
 				}
 				sendToAllFrom(animationObj, receiveFromClient);
+
 			} else if (received.get("type").equals("playerInfo")) {
 				receiveFromClient.username = (String) received.get("username");
 
@@ -176,8 +167,39 @@ public class Server {
 				playerInfo.put("type", "playerInfo");
 				playerInfo.put("username", receiveFromClient.username);
 				sendToAllFrom(playerInfo, receiveFromClient);
+
+			} else if (received.get("type").equals("readyStatus")) { //during lobby, wait for all players to be ready
+				boolean ready = (boolean) received.get("readyStatus");
+				receiveFromClient.ready = ready;
+				received.put("username", receiveFromClient.username);
+				sendToAllFrom(received, receiveFromClient);
+				if (allAreReady()) {
+					endLobby();
+				}
 			}
 		}
+    }
+
+    public static boolean allAreReady() {
+    	for (PlayerClient client: clients) {
+    		if (!client.ready) {
+    			System.out.println("not ready");
+    			return false;
+    		}
+    	}
+    	return true;
+    }
+
+    /**
+     * let everyone know the game is starting
+     */
+    public static void endLobby() {
+		JSONObject readyObject = new JSONObject();
+		readyObject.put("type", "gameStartSignal");
+		for (PlayerClient client: clients) {
+			System.out.println("sending");
+        	sendJSONOnSocketChannel(readyObject, client.socketChannel);
+    	}
     }
 
     public static void sendToAllFrom(JSONObject toSend, PlayerClient from) {

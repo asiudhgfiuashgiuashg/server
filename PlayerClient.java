@@ -11,9 +11,11 @@ public class PlayerClient {
     String username;
     SocketChannel socketChannel;
     Queue<JSONObject> messageInQueue;
+    boolean ready; //to start the game
 
     public PlayerClient(SocketChannel socketChannel) {
     	this.socketChannel = socketChannel;
         messageInQueue =  new LinkedList<>();
+        ready = false;
     }
 }

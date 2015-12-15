@@ -15,7 +15,7 @@ import java.util.Queue;
 import java.util.LinkedList;
 
 public class Server {
-	private static final int MAX_CLIENTS = 2;
+	private static final int MAX_CLIENTS = 5;
 	private static List<PlayerClient> clients;
     public static void main(String[] args) throws IOException {	
 	    clients = new ArrayList<>();
@@ -54,6 +54,16 @@ public class Server {
 		        		System.out.println("client number " + String.valueOf(numClientsConnected) + " connected");
 		        		numClientsConnected++;
 		        		
+		        		//give newly connected player the player info of everyone else
+						JSONObject playerInfo = new JSONObject();
+						for (PlayerClient client: clients) {
+							if (!client.equals(playerClient)) {
+								playerInfo.put("type", "playerInfo");
+								playerInfo.put("username", client.username);
+								sendJSONOnSocketChannel(playerInfo, playerClient.socketChannel);
+								playerInfo.clear();
+							}
+						}
 
 		        		if (MAX_CLIENTS == numClientsConnected) { // send game start signal to everyone
 		        			JSONObject readyObject = new JSONObject();
@@ -98,6 +108,9 @@ public class Server {
 			System.exit(-1);
 		}
     }
+
+  
+
 
     public static void attemptReadFrom(PlayerClient client) {
     	JSONObject receiveTo = new JSONObject();
@@ -155,6 +168,14 @@ public class Server {
 					animationObj.put("animationName", "idle");
 				}
 				sendToAllFrom(animationObj, receiveFromClient);
+			} else if (received.get("type").equals("playerInfo")) {
+				receiveFromClient.username = (String) received.get("username");
+
+				JSONObject playerInfo = new JSONObject();
+				//send newly connected player's info to everyone else
+				playerInfo.put("type", "playerInfo");
+				playerInfo.put("username", receiveFromClient.username);
+				sendToAllFrom(playerInfo, receiveFromClient);
 			}
 		}
     }

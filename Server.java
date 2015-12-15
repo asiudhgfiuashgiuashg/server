@@ -17,10 +17,12 @@ import java.util.LinkedList;
 public class Server {
 	private static final int MAX_CLIENTS = 5;
 	private static List<PlayerClient> clients;
+
     public static void main(String[] args) throws IOException {	
 	    clients = new ArrayList<>();
 	    ServerSocketChannel serverSocketChannel;
 	    int numClientsConnected = 0;
+	    int currentUID = 0;
 	    
         if (args.length != 1) {
             System.err.println("Usage: java EchoServer <port number>");
@@ -49,6 +51,8 @@ public class Server {
 		        		PlayerClient playerClient = new PlayerClient(socketChannel);
 		        		socketChannel.configureBlocking(false);
 		        		playerClient.socketChannel = socketChannel;
+		        		playerClient.uid = currentUID;
+		        		currentUID++;
 		        		clients.add(playerClient);
 
 		        		System.out.println("client number " + String.valueOf(numClientsConnected) + " connected");
@@ -60,10 +64,26 @@ public class Server {
 							if (!client.equals(playerClient)) {
 								playerInfo.put("type", "playerInfo");
 								playerInfo.put("username", client.username);
+								playerInfo.put("uid", client.uid);
 								sendJSONOnSocketChannel(playerInfo, playerClient.socketChannel);
 								playerInfo.clear();
 							}
 						}
+
+						//send newly connected player their UID;
+						JSONObject uidInfo = new JSONObject();
+						uidInfo.put("type", "uidUpdate");
+						uidInfo.put("uid", playerClient.uid);
+						sendJSONOnSocketChannel(uidInfo, playerClient.socketChannel);
+
+
+						//send everyone the uid of the newly-connected player
+/*		
+						sendToAllFrom(uidInfo, )
+*/
+
+						
+						
 		        	}
             	}
             	
@@ -166,12 +186,13 @@ public class Server {
 				//send newly connected player's info to everyone else
 				playerInfo.put("type", "playerInfo");
 				playerInfo.put("username", receiveFromClient.username);
+				playerInfo.put("uid", receiveFromClient.uid);
 				sendToAllFrom(playerInfo, receiveFromClient);
 
 			} else if (received.get("type").equals("readyStatus")) { //during lobby, wait for all players to be ready
 				boolean ready = (boolean) received.get("readyStatus");
 				receiveFromClient.ready = ready;
-				received.put("username", receiveFromClient.username);
+				received.put("uid", receiveFromClient.uid);
 				sendToAllFrom(received, receiveFromClient);
 				if (allAreReady()) {
 					endLobby();

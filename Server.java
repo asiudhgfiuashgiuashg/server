@@ -197,6 +197,8 @@ public class Server {
 				if (allAreReady()) {
 					endLobby();
 				}
+			} else if (received.get("type").equals("chatMessage")) {
+				sendToAllFrom(received, receiveFromClient);
 			}
 		}
     }

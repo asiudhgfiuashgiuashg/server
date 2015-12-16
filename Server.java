@@ -130,11 +130,22 @@ public class Server {
 			if (numBytesRead > 0) {
 				String receivedStr = new String(byteBuffer.array(), 0, numBytesRead, "ASCII");
 				String lines[] = receivedStr.split("\\r?\\n");
-				for (String line: lines) {
+				for (String line: lines) {                    
 					System.out.println("--------------------------------------");
-					receiveTo = (JSONObject) JSONValue.parse(receivedStr);
+					receiveTo = (JSONObject) JSONValue.parse(line);
 					System.out.println("received json value: " + receiveTo);
 					client.messageInQueue.add(receiveTo);
+
+                    if(receiveTo == null)
+                    {
+                        System.out.println("\nReceived a null error. Below is receivedStr, printed out");
+                        System.out.println(receivedStr);
+                        for(int x = 0; x < lines.length; x++){
+                        System.out.printf("Line %d: %s\n", x, lines[x]);
+                        }
+
+                    }
+                    
 				}
 			}
     	} catch (Exception e) {

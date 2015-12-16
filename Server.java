@@ -198,6 +198,12 @@ public class Server {
 					endLobby();
 				}
 			} else if (received.get("type").equals("chatMessage")) {
+				String message = (String) received.get("message");
+				message = receiveFromClient.username + ": " + message;
+				received.clear();
+				received.put("type", "chatMessage");
+				received.put("message", message);
+				System.out.println("sending chat message: " + received);
 				sendToAllFrom(received, receiveFromClient);
 			}
 		}
